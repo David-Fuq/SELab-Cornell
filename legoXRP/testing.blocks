@@ -1,0 +1,18 @@
+from XRPLib.board import Board
+from XRPLib.imu import IMU
+import time
+
+board = Board.get_default_board()
+
+imu = IMU.get_default_imu()
+imu.calibrate(1)
+
+
+while not (board.is_button_pressed()):
+  print(imu.get_acc_x())
+  time.sleep(0.1)
+
+
+
+## [2025-06-14 15:47:01]
+##XRPBLOCKS {"blocks":{"languageVersion":0,"blocks":[{"type":"xrp_motor_speed","id":"O]TxqF8)|wm,w$v~rjmK","x":-326,"y":-165,"enabled":false,"fields":{"MOTOR":"1"},"inputs":{"speed":{"shadow":{"type":"math_number","id":"Aa059fl=0R#z/,GWfu)n","fields":{"NUM":30}}}},"next":{"block":{"type":"controls_whileUntil","id":"[ZW`XPY8Cm@E*88=xAR/","enabled":false,"fields":{"MODE":"UNTIL"},"inputs":{"BOOL":{"block":{"type":"xrp_button_pressed","id":"EZdCGSFS(IB0UkR7T%|^"}},"DO":{"block":{"type":"text_print","id":",L8Cy?`7C0?10eFuf~%j","inputs":{"TEXT":{"shadow":{"type":"text","id":"j-|,{B`o`JnFav/5H9}p","fields":{"TEXT":"abc"}},"block":{"type":"xrp_getleftencoder","id":"0U7~,vc?yC^/D1Y00cM-"}}},"next":{"block":{"type":"xrp_sleep","id":"a.dHW?qNWk(`;J/=s_Qi","inputs":{"TIME":{"shadow":{"type":"math_number","id":"F|@up/|$rzCxJv4Rp/-z","fields":{"NUM":0.1}}}}}}}}}}}},{"type":"controls_whileUntil","id":"2(62r@Xij8bwUhKJ%IuF","x":-717,"y":-240,"fields":{"MODE":"UNTIL"},"inputs":{"BOOL":{"block":{"type":"xrp_button_pressed","id":"n_pFJ}bldO`vuYd8QU54"}},"DO":{"block":{"type":"text_print","id":"WGo,Ob^k~[FfWS7bM!%Z","inputs":{"TEXT":{"shadow":{"type":"text","id":"5pgb|:[e=]7_xZr4u4II","fields":{"TEXT":"abc"}},"block":{"type":"xrp_acc_x","id":"PdXQ@k@2xN)gs`[6FH~c"}}},"next":{"block":{"type":"xrp_sleep","id":"vWyUO(Na=fWLH_H?$UvR","inputs":{"TIME":{"shadow":{"type":"math_number","id":"r1|Zxc$%^Bn)(h;+y;rC","fields":{"NUM":0.1}}}}}}}}}}]}}
