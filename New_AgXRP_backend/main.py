@@ -161,7 +161,7 @@ async def file_transfer_receive_task(data_list):
 
 async def process_incoming_command(controller, user_input):
     """Process incoming command from stdin"""
-    global last_ping_time, task_movement_ref, task_file_transfer_ref
+    global last_ping_time, task_movement_ref, task_file_transfer_ref, task_send_file_transfer_ref
     
     # Update the last ping time for connection status
     last_ping_time = time.time()
@@ -185,7 +185,13 @@ async def process_incoming_command(controller, user_input):
             task_file_transfer_ref = asyncio.create_task(file_transfer_receive_task(data_list))
         else:
             print("File transfer task already running, please wait.")
-    #elif user_input.startswith("20,") or user_input.startswith("21,"):
+    elif user_input.startswith("20,"): #or user_input.startswith("21,"):
+        # File transfer request
+        data_list = user_input.split(",")
+        if task_send_file_transfer_ref is None or task_send_file_transfer_ref.done():
+            task_send_file_transfer_ref = asyncio.create_task(file_transfer_request_task(controller, int(data_list[1])))
+        else:
+            print("File send request task already running, please wait.")
      #   pass
     #TODO Create a task for file transfer requests
     else: 
