@@ -1,25 +1,31 @@
 from agbot import AgBot
 from agbot_memory import AgBotMemory
-from agbot_file_util import Utils
 import time
+import machine
+from agbot_file_util import Utils
+
 import uasyncio as asyncio
-from clock import Clock
+#from clock import Clock
 
 class Controller():
     @classmethod
     def get_default_controller(cls):
         memory = AgBotMemory.get_default_agbotmemory()
         agBot = AgBot.get_default_agbot()
-        clock = Clock.get_default_clock()
-        return Controller(memory, agBot, clock)
+        rtc = machine.RTC()
+        #(year, month, day, weekday, hours, minutes, seconds, subseconds)
+        #rtc.datetime((2025, 7, 16, 0, 13, 8, 33, 36))
+        #rtc.datetime((2025, 6, 1, 14, 20, 30, 0, 0))
+        #clock = Clock.get_default_clock()
+        return Controller(memory, agBot, rtc) 
     
     def __init__(self,
                  memory: AgBotMemory,
                  agbot: AgBot,
-                 clock: Clock):
+                 rtc):
+        self.rtc = rtc
         self.memory = memory
         self.agbot = agbot
-        self.clock = clock
         
         self.agbot.stop()
         
@@ -76,24 +82,35 @@ class Controller():
     def log_string_from_reading(self, date, x, y, reading):
         return date + "," + str(int(x)) + "," + str(int(y)) + "," + str(reading)
 
-    async def run_mission(self, date=None, mission_id=0):
+    async def run_mission(self, date=None, mission_id=0, date_from_pc=None):
         # Step 1: Move to each location
         # Step 2: Sense the moisture
         # Repeat for all locations in mission
         #`Step 3: Move back home
         mission = self.memory.get_mission(mission_id)
 
-        if date is None:
-            #time = self.clock.get_time()
-            time_local = time.localtime()
+        if date is None and date_from_pc is None:
+            time_local = self.rtc.datetime()
             if time_local is not None:
-                #second, minute, hour, weekday, month, day, year = self.clock.get_time()
-                year, month, day, hour, minute, second, weekday, year_day = time.localtime()
+                year, month, day, weekday, hour, minute, second, microsecond = self.rtc.datetime()
                 print(second, minute, hour, weekday, month, day, year)
                 date = Utils.reading_name_from_time(month, day, year, hour, minute, second)
             else:
                 print("Error: Could not get time")
                 return
+        elif date_from_pc is not None:
+            year, month, day, weekday, hours, minutes, seconds, subseconds = date_from_pc
+            self.rtc.datetime((year, month, day, weekday, hours, minutes, seconds, subseconds))
+            time_local = self.rtc.datetime()
+            if time_local is not None:
+                year, month, day, weekday, hour, minute, second, microsecond = self.rtc.datetime()
+                print(second, minute, hour, weekday, month, day, year)
+                date = Utils.reading_name_from_time(month, day, year, hour, minute, second)
+            else:
+                print("Error: Could not get time")
+                return
+            
+            
             
         if mission is not None:
             for location in mission.get("locations", []):
@@ -130,7 +147,7 @@ class Controller():
                                                                         water_site[1],
                                                                         water_amount)
                     print("Watering: ", water_reading_string)
-                    Utils.append_reading_to_csv("water_log.csv", water_reading_string)
+                    Utils.append_reading_to_csv("water_log.csv", water_reading_string)	
 
 
                 print("String to log: ", reading_string)
@@ -139,11 +156,12 @@ class Controller():
             # Step 3: Move back home
             await self.agbot.move_to(10, 10)
 
-    async def run(self):
+    async def run(self, datetime_from_pc=None):
         """
         Run the scheduled routine
         This function will run the routine at scheduled times
         """
+        print("Hello from controller.run")
         missions = self.memory.get_missions()
         mission_history = Utils.get_mission_history()
         for m in mission_history:
@@ -154,25 +172,44 @@ class Controller():
             print("\t", mission["type"], "at", mission["time"][0], mission["time"][1])
 
         await self.agbot.home()
+        print("Despues de homing")
         await asyncio.sleep(1)
         await self.setup_xy_max()
+        print("Despues de xymax")
         await asyncio.sleep(1)
         await self.agbot.move_to(20, 20)
-
+        print("Antes del while")
+        
+        if datetime_from_pc is not None:
+            year, month, day, weekday, hours, minutes, seconds, subseconds = datetime_from_pc
+            self.rtc.datetime((year, month, day, weekday, hours, minutes, seconds, subseconds))
         while True:
             # get the time
-            time_local = time.localtime()
+            print("Despues de agbot.move_to(20,20)")
+            time_local = self.rtc.datetime()
+            print(time_local)
             if time_local is None:
                 print("Error: Could not get time")
                 await asyncio.sleep(30)
                 continue
-            year, month, day, hour, minute, second, weekday, year_day = time.localtime()
+            print("Antes de tupla")
+            year, month, day, weekday, hour, minute, second, microsecond = self.rtc.datetime()
+            fecha_string = str(year)+str(month)+str(day)+str(hour)+str(minute)+str(second)
+            print("Despues de tupla")
+            fecha_log = f"{year}/{month}/{day} {hour}:{minute}:{second}"
+            Utils.append_reading_to_csv("hora_procesos.csv", fecha_string)
+            print("Fecha evaluada", fecha_log)
             print(second, minute, hour, weekday, month, day, year)
             date = Utils.reading_name_from_time(month, day, year, hour, minute, second)
+            print(date)
             
+            i = 0
             for mission in missions:
+                i += 1
+                print("Lectura de mision", i)
                 mission_compeleted = False
                 for past_mission in mission_history:
+                    print("For past_mission in mission_history")
                     if past_mission[0] == mission["mission_id"]:
                         # Mission has already been run today
                         if past_mission[1] == day and past_mission[2] == month and past_mission[3] == year-2000:
@@ -181,7 +218,7 @@ class Controller():
                 
                 # If its is past mission time, run the mission
                 if (mission_compeleted == False) and (mission["time"][0] == int(hour) and mission["time"][1] <= int(minute) or \
-                    mission["time"][0] < int(hour)): 
+                    mission["time"][0] < int(hour)):
                     # we run the mission if it is within 5 minutes of the scheduled time
                     # if the mission has not been completed
                     print("Running mission: ", mission["type"])
@@ -189,15 +226,16 @@ class Controller():
                         await self.run_mission(date, mission["mission_id"])
                         mission_history.append([mission["mission_id"], day, month, year-2000, hour, minute])
                         Utils.append_mission_to_history(mission["mission_id"], day, month, year, hour, minute)
-
+            print("Antes del await")
             await asyncio.sleep(30)
+            print("Despues del await")
           
     def manual(self):
         while True:
             print()
             print("1. Agbot Controls")
             print("2. Memory Controls")
-            #print("3. Clock Controls")
+            print("3. Clock Controls")
             print("4. Run Scheduled")
             print("5. Run Routine")
             print("6. Exit")
@@ -207,7 +245,7 @@ class Controller():
             elif choice == 2:
                 self.memory.manual()
             #elif choice == 3:
-             #   self.clock.manual()
+                #self.clock.manual()
             elif choice == 4:
                 self.run()
             elif choice == 5:
@@ -216,5 +254,3 @@ class Controller():
                 break
             else:
                 print("Invalid choice")
-
-   
