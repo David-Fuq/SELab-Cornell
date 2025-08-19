@@ -1,8 +1,7 @@
 from agbot import AgBot
 from agbot_memory import AgBotMemory
-
 from agbot_file_util import Utils
-
+import time
 import uasyncio as asyncio
 from clock import Clock
 
@@ -85,9 +84,11 @@ class Controller():
         mission = self.memory.get_mission(mission_id)
 
         if date is None:
-            time = self.clock.get_time()
-            if time is not None:
-                second, minute, hour, weekday, month, day, year = self.clock.get_time()
+            #time = self.clock.get_time()
+            time_local = time.localtime()
+            if time_local is not None:
+                #second, minute, hour, weekday, month, day, year = self.clock.get_time()
+                year, month, day, hour, minute, second, weekday, year_day = time.localtime()
                 print(second, minute, hour, weekday, month, day, year)
                 date = Utils.reading_name_from_time(month, day, year, hour, minute, second)
             else:
@@ -160,12 +161,12 @@ class Controller():
 
         while True:
             # get the time
-            time = self.clock.get_time()
-            if time is None:
+            time_local = time.localtime()
+            if time_local is None:
                 print("Error: Could not get time")
                 await asyncio.sleep(30)
                 continue
-            second, minute, hour, weekday, month, day, year = self.clock.get_time()
+            year, month, day, hour, minute, second, weekday, year_day = time.localtime()
             print(second, minute, hour, weekday, month, day, year)
             date = Utils.reading_name_from_time(month, day, year, hour, minute, second)
             
@@ -196,7 +197,7 @@ class Controller():
             print()
             print("1. Agbot Controls")
             print("2. Memory Controls")
-            print("3. Clock Controls")
+            #print("3. Clock Controls")
             print("4. Run Scheduled")
             print("5. Run Routine")
             print("6. Exit")
@@ -205,8 +206,8 @@ class Controller():
                 self.agbot.manual()
             elif choice == 2:
                 self.memory.manual()
-            elif choice == 3:
-                self.clock.manual()
+            #elif choice == 3:
+             #   self.clock.manual()
             elif choice == 4:
                 self.run()
             elif choice == 5:

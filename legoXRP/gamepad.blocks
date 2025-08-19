@@ -1,0 +1,15 @@
+from XRPLib.differential_drive import DifferentialDrive
+from XRPLib.gamepad import *
+
+differentialDrive = DifferentialDrive.get_default_differential_drive()
+
+gp = Gamepad.get_default_gamepad()
+
+
+while not False:
+  differentialDrive.arcade((gp.get_value(gp.Y1)), (gp.get_value(gp.X1)))
+
+
+
+## [2025-06-14 20:31:53]
+##XRPBLOCKS {"blocks":{"languageVersion":0,"blocks":[{"type":"controls_whileUntil","id":"aV=]2c)@p)N1Ov;VIlE!","x":-1414,"y":-568,"fields":{"MODE":"UNTIL"},"inputs":{"DO":{"block":{"type":"xrp_arcade","id":"=iYO$w4M7~0EM!?XYo2d","inputs":{"STRAIGHT":{"shadow":{"type":"math_number","id":"|JrVZ;AxR^2{-hU^!s@;","fields":{"NUM":0.8}},"block":{"type":"xrp_gp_get_value","id":"1LJd-[S1VM9[O@5|MWVm","fields":{"GPVALUE":"Y1"}}},"TURN":{"shadow":{"type":"math_number","id":"@/K{Hl_$,P}oH#`V#5Q9","fields":{"NUM":0.2}},"block":{"type":"xrp_gp_get_value","id":"OV;thvOESKpUKPIR?37-","fields":{"GPVALUE":"X1"}}}}}}}}]}}

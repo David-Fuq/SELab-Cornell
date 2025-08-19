@@ -219,6 +219,7 @@ class XY_motion:
             self.motor_a.set_effort(A_Motor_Direction*(bound_effort(base_effort - encoderCorrection)))
             self.motor_b.set_effort(B_Motor_Direction*(bound_effort(base_effort + encoderCorrection)))
 
+            await asyncio.sleep(0.05)
             # not moving ?
             if math.fabs(self.motor_a.speed) <= 5 and math.fabs(self.motor_b.speed) <= 5:
                 self.motor_a.set_effort(0)
